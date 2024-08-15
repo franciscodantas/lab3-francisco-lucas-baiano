@@ -30,20 +30,47 @@ public class FileSimilarity {
 
         // Compare each pair of files
         for (int i = 0; i < args.length; i++) {
+            List<InnerFileSimilarity> threads = new ArrayList<InnerFileSimilarity>();
             for (int j = i + 1; j < args.length; j++) {
                 String file1 = args[i];
                 String file2 = args[j];
-                Thread task = new Thread(() -> {
-                    try {
-                        List<Long> fingerprint1 = fileFingerprints.get(file1);
-                        List<Long> fingerprint2 = fileFingerprints.get(file2);
-                        float similarityScore = similarity(fingerprint1, fingerprint2);
-                        System.out.println("Similarity between " + file1 + " and " + file2 + ": " + (similarityScore * 100) + "%");
-                    } catch (Exception e) {
-                    }
-                });
+                InnerFileSimilarity task = new InnerFileSimilarity(file1, file2, fileFingerprints.get(file1), fileFingerprints.get(file2));
                 task.start();
+                threads.add(task);
             }
+            for (InnerFileSimilarity thread2 : threads) {
+                thread2.join();
+                System.out.println(thread2.toString());
+            }
+        }
+    }
+
+    public static class InnerFileSimilarity extends Thread {
+        List<Long> fingerprint1;
+        List<Long> fingerprint2;
+        float similarityScore;
+        String file1;
+        String file2;
+
+        public InnerFileSimilarity(String file1, String file2, List<Long> fingerprint1, List<Long> fingerprint2){
+            this.fingerprint1 = fingerprint1;
+            this.fingerprint2 = fingerprint2;
+            this.file1 = file1;
+            this.file2 = file2;
+        }
+
+        @Override
+        public void run(){
+             this.similarityScore = similarity(fingerprint1, fingerprint2);
+        }
+
+        public float getSimilarity(){
+            return this.similarityScore;
+        }
+
+        @Override
+        public String toString(){
+            return "Similarity between " + file1 + " and " + file2 + ": " + (similarityScore * 100) + "%";
         }
     }
 
